@@ -1,5 +1,10 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, Timer } from 'claude-code'
+import type {
+  EngineInterface,
+  ProcessRunResult,
+  Register,
+  Timer,
+} from 'claude-code'
 
 import type { BandMetrics, BandScheme, BandView, Effort } from '../types'
 
@@ -59,8 +64,10 @@ function fmt(value: number): string {
   if (value < 1_000) return String(Math.round(value))
   if (value < 10_000) return `${trimZero((value / 1_000).toFixed(1))}k`
   if (value < 1_000_000) return `${Math.round(value / 1_000)}k`
-  if (value < 10_000_000) return `${trimZero((value / 1_000_000).toFixed(1))}M`
-  return `${Math.round(value / 1_000_000)}M`
+  // Millions always keep one decimal: 1.0M stays readable next to 1.2M,
+  // and a long session's tens of millions keep their tenth instead of
+  // collapsing to a bare integer.
+  return `${(value / 1_000_000).toFixed(1)}M`
 }
 
 function fmtSpeed(value: number): string {
@@ -370,6 +377,230 @@ async function addUsage(
   } catch {}
 }
 
+/** Said when the transcript cannot be read, so the counters start from 0. */
+const LEDGER_HINT =
+  'Status band: session transcript unreadable (missing or over 4 MiB); token counters start from 0.'
+
+/**
+ * The notice waits for the resume to commit: `classic.SessionStart` runs
+ * while the session being left is still the one a `$.ui.log` row lands in.
+ */
+const LEDGER_HINT_DELAY_MS = 500
+
+/** The four cumulative totals one transcript ledger carries. */
+type LedgerCounts = Pick<
+  BandMetrics,
+  'inputTokens' | 'outputTokens' | 'cacheReadTokens' | 'cacheCreationTokens'
+>
+
+/** A ledger token count; anything non-numeric or negative counts as zero. */
+function countOf(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : 0
+}
+
+/**
+ * One cost-state row's totals. `thinkingTokens` is already inside
+ * `outputTokens`, and `cacheCreationEphemeral*` inside
+ * `cacheCreationInputTokens`, so neither is added again.
+ */
+function ledgerTotals(record: Record<string, unknown>): LedgerCounts {
+  const counts: LedgerCounts = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheCreationTokens: 0,
+  }
+  const models = record.modelUsage
+  if (!isRecord(models)) return counts
+  for (const entry of Object.values(models)) {
+    if (!isRecord(entry)) continue
+    counts.inputTokens += countOf(entry.inputTokens)
+    counts.outputTokens += countOf(entry.outputTokens)
+    counts.cacheReadTokens += countOf(entry.cacheReadInputTokens)
+    counts.cacheCreationTokens += countOf(entry.cacheCreationInputTokens)
+  }
+  return counts
+}
+
+/** One JSONL row as this session's ledger totals, or null. */
+function ledgerRow(line: string, sessionId: string): LedgerCounts | null {
+  const text = line.trim()
+  // Cheap prefilter: JSON.parse runs only for plausible ledger rows.
+  if (text === '' || !text.includes('"cost-state"')) return null
+  let row: unknown
+  try {
+    row = JSON.parse(text)
+  } catch {
+    return null
+  }
+  return isRecord(row) && row.type === 'cost-state' && row.sessionId === sessionId
+    ? ledgerTotals(row)
+    : null
+}
+
+/**
+ * The totals `/usage` restores for `sessionId`: the last cost-state row in the
+ * transcript carrying that id (the engine's last-wins). Scans backward.
+ */
+function ledgerFromTranscript(
+  text: string,
+  sessionId: string,
+): LedgerCounts | null {
+  const body = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
+  let end = body.length
+  while (end > 0) {
+    const start = body.lastIndexOf('\n', end - 1) + 1
+    const row = ledgerRow(body.slice(start, end), sessionId)
+    if (row !== null) return row
+    end = start > 0 ? start - 1 : 0
+  }
+  return null
+}
+
+/** Whether any of the four cumulative counters has moved. */
+function hasCounters(m: BandMetrics): boolean {
+  return (
+    m.inputTokens + m.outputTokens + m.cacheReadTokens + m.cacheCreationTokens > 0
+  )
+}
+
+/** The host reads this many trailing lines when the whole read is too big. */
+const LEDGER_TAIL_LINES = 64
+
+/** A cold PowerShell start is a few hundred ms; bound a resume that hangs. */
+const LEDGER_TAIL_TIMEOUT_MS = 5_000
+
+/** A path with C0 controls (newline, tab, NUL, ...) never reaches a command. */
+const UNSAFE_PATH = /[\u0000-\u001f\u007f]/
+
+/** The argv of one tail read, or null when the path cannot be given safely. */
+function ledgerTailArgv(
+  path: string,
+  isWindows: boolean,
+): readonly string[] | null {
+  if (path === '' || UNSAFE_PATH.test(path)) return null
+  if (isWindows) {
+    // A PowerShell single-quoted string has only `'` special: double it.
+    const quoted = path.replaceAll("'", "''")
+    return [
+      'powershell.exe',
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '[Console]::OutputEncoding=[Text.Encoding]::UTF8; ' +
+        `Get-Content -LiteralPath '${quoted}' -Tail ${LEDGER_TAIL_LINES} ` +
+        '-Encoding UTF8 -ErrorAction Stop',
+    ]
+  }
+  // argv is not a shell; transcript paths are absolute and never start with -.
+  return ['tail', '-n', String(LEDGER_TAIL_LINES), path]
+}
+
+/** Whether the host is Windows: `OS` decides, a non-empty `ComSpec` falls back. */
+async function isWindowsHost($: EngineInterface): Promise<boolean> {
+  const [os, comspec] = await Promise.all([
+    $.env.get('OS').catch(() => undefined),
+    $.env.get('ComSpec').catch(() => undefined),
+  ])
+  if (os !== undefined) return os === 'Windows_NT'
+  return comspec !== undefined && comspec !== ''
+}
+
+/**
+ * The fallback when the whole transcript cannot be read: one host command
+ * reads its tail and the last matching ledger row is used. Null when the
+ * command fails, times out, its output is cut, or the tail has no such row.
+ */
+async function ledgerTail(
+  $: EngineInterface,
+  transcriptPath: string,
+  sessionId: string,
+): Promise<LedgerCounts | null> {
+  let argv: readonly string[] | null
+  try {
+    argv = ledgerTailArgv(transcriptPath, await isWindowsHost($))
+  } catch {
+    return null
+  }
+  if (argv === null) return null
+
+  let result: ProcessRunResult
+  try {
+    result = await $.process.run(argv, { timeoutMs: LEDGER_TAIL_TIMEOUT_MS })
+  } catch {
+    return null // cannot start, timed out, or refused by the host
+  }
+  // A truncated stdout keeps the first 4 MiB, the older part of the tail, and
+  // could hold an earlier ledger row: discard it rather than seed a stale one.
+  if (result.exitCode !== 0 || result.isStdoutTruncated || result.stdout === '') {
+    return null
+  }
+  return ledgerFromTranscript(result.stdout, sessionId)
+}
+
+/** The generation-guarded replace both readers end with. */
+async function seedCounts(
+  $: EngineInterface,
+  counts: LedgerCounts,
+  gen: number,
+): Promise<void> {
+  await update($, band, current =>
+    gen !== generation || hasCounters(current) ? current : { ...current, ...counts },
+  )
+}
+
+/** The delayed notice: it waits for the resume to commit before it is written. */
+function scheduleHint($: EngineInterface, gen: number): void {
+  try {
+    $.clock.after(LEDGER_HINT_DELAY_MS, () => {
+      if (gen !== generation) return
+      try {
+        $.ui.log(LEDGER_HINT)
+      } catch {}
+    })
+  } catch {}
+}
+
+/**
+ * Seeds the counters from the same ledger `/usage` restores. `gen` is the
+ * generation read at the hook, so a `/clear` during the read changes nothing.
+ */
+async function seedLedger(
+  $: EngineInterface,
+  transcriptPath: string,
+  sessionId: string,
+  gen: number,
+): Promise<void> {
+  if (transcriptPath === '' || sessionId === '') return
+
+  const before = await read($, band)
+  if (gen !== generation || hasCounters(before)) return
+
+  let text: string
+  try {
+    text = await $.fs.read(transcriptPath)
+  } catch {
+    // Unreadable whole (over the 4 MiB cap, or missing): one host command
+    // reads the tail instead; only when that fails too is the notice shown.
+    const counts = await ledgerTail($, transcriptPath, sessionId)
+    if (gen !== generation) return
+    if (counts === null) {
+      scheduleHint($, gen)
+      return
+    }
+    await seedCounts($, counts, gen)
+    return
+  }
+  if (gen !== generation) return
+
+  const counts = ledgerFromTranscript(text, sessionId)
+  if (counts === null) return // no ledger: `/usage` restores nothing either
+
+  await seedCounts($, counts, gen)
+}
+
 async function seed($: EngineInterface): Promise<void> {
   const [model, usage] = await Promise.all([$.session.model(), $.session.usage()])
   const current = await read($, band)
@@ -420,7 +651,17 @@ export const register: Register = on => {
   // SessionStart hook runs right after, so the stored preference is read again
   // here; without it `view` falls back to the atom's initial, color.
   on('classic.SessionStart', async ($, e, next) => {
+    const gen = generation
     await restoreView($).catch(() => {})
+    // A resume restores the ending conversation: seed the counters from the
+    // ledger `/usage` reads, so the three token segments agree with it.
+    if (
+      e.source === 'resume' &&
+      typeof e.transcript_path === 'string' &&
+      typeof e.session_id === 'string'
+    ) {
+      await seedLedger($, e.transcript_path, e.session_id, gen).catch(() => {})
+    }
     return next(e)
   })
 

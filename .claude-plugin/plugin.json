@@ -1,6 +1,6 @@
 {
   "name": "status-band",
-  "version": "0.1.0",
-  "description": "Live above-prompt status band: model, thinking effort, context %, cumulative session tokens, cache rate and tok/s. No subprocesses.",
+  "version": "0.1.1",
+  "description": "Live above-prompt status band: model, thinking effort, context %, cumulative session tokens, cache rate and tok/s. Runs in-process; one host tail command only when a resumed transcript cannot be read whole.",
   "types": "./types/index.d.ts"
 }

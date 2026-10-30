@@ -2,8 +2,8 @@
 
 [English](README.md) | **中文**
 
-一个 Claude Code **Mod**：在输入框上方绘制实时状态条，完全运行在 Claude Code
-进程内。
+一个 Claude Code **Mod**：在输入框上方绘制实时状态条，运行在 Claude Code 进程内。
+唯一会启动的宿主进程，是在恢复的 transcript 超过插件 4 MiB 读取上限时，一次性读取文件尾部。
 
 ```
 Opus 5.5  high  ctx 42%  ↑ 1.2k  ↓ 4.5k  cache 98.2k 87%  42 t/s
@@ -50,7 +50,12 @@ Status band
 ## 计数口径
 
 计数累计该 Mod 观察到的所有模型请求 —— 主线程步骤、子代理、`/compact`，以及
-`$.model.complete` / `$.model.fork` —— 并在 `/clear` 时归零。上下文百分比始终是
+`$.model.complete` / `$.model.fork` —— 并在 `/clear` 时归零。`/resume` 时，三条
+token 会先用 transcript 最后一条 `cost-state`（即 `/usage` 恢复的会话账本）做基数，
+再继续累计，从而与 `/usage` 保持一致。整份文件读不了时（最常见是超过插件 4 MiB
+读取上限），会用一条宿主命令读取末尾（Windows 为 PowerShell 的 `Get-Content -Tail`，
+其他平台为 `tail -n`），并用末尾最后一条匹配记录做基数；只有连它也取不到时，才从 0
+开始并输出一条提示。上下文百分比始终是
 实时值。`t/s` 只统计主线程响应，从第一个输出块到结束（不含首 token 延迟；短于
 0.25 秒的响应跳过）；流式过程中显示当前响应的估算值（每 token 按 4 字符，最多每
 250 ms 重绘一次），结束后显示会话平均值。

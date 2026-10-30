@@ -16,7 +16,8 @@ export type BandMetrics = {
 
   // Cumulative over every model request this process observed: main-thread
   // turn steps, subagents, compaction summaries, `$.model.complete` and
-  // `$.model.fork` calls. Reset on /clear.
+  // `$.model.fork` calls. Reset on /clear. On /resume, seeded from the
+  // transcript's cost-state ledger, the totals `/usage` restores.
   inputTokens: number
   outputTokens: number
   cacheReadTokens: number

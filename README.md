@@ -2,8 +2,9 @@
 
 **English** | [中文](README.zh-CN.md)
 
-A Claude Code **Mod** that draws a live status band above the prompt, entirely
-inside the Claude Code process.
+A Claude Code **Mod** that draws a live status band above the prompt, running
+inside the Claude Code process. Its only host process is a one-shot tail read
+when a resumed transcript is over the plugin's 4 MiB read cap.
 
 ```
 Opus 5.5  high  ctx 42%  ↑ 1.2k  ↓ 4.5k  cache 98.2k 87%  42 t/s
@@ -55,8 +56,14 @@ the counters fold onto a second row.
 
 Counters accumulate across every model request the mod observes — main-thread
 steps, subagents, `/compact`, and `$.model.complete` / `$.model.fork` — and reset
-on `/clear`. Context % is always live. `t/s` times main-thread responses only,
-first chunk to end (TTFT excluded; responses under 0.25 s skipped); while a
+on `/clear`. On `/resume` they are seeded from the transcript's last `cost-state`
+row, the same session ledger `/usage` restores, so the three token segments keep
+matching `/usage`. A transcript over the 4 MiB plugin-read cap is read from its
+tail by one host command — `Get-Content -Tail` through PowerShell on Windows,
+`tail -n` elsewhere — and the last matching row there seeds the counters. If
+the read and that tail both fail, they stay at zero and a delayed notice is
+logged. Context % is always live. `t/s` times main-thread responses only, first
+chunk to end (TTFT excluded; responses under 0.25 s skipped); while a
 response streams it shows that response's estimate (4 chars/token, repainted at
 most every 250 ms), then the session average.
 
