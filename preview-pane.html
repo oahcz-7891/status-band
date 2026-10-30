@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code · /band 选择器预览</title>
+<style>
+  :root {
+    --bg: #0d1017;
+    --line: #262c38;
+    --text: #d7dce5;
+    --blue: #4c9aff;
+    --white: #f5f7fa;
+    --muted: #8a93a2;
+    --orange: #ffa94d;
+    --yellow: #ffd43b;
+    --green: #51cf66;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 38px 26px 90px;
+    background: radial-gradient(1200px 620px at 18% -10%, #1b2030 0%, var(--bg) 55%);
+    color: #e6e9ef;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 26px; line-height: 1.75; }
+  .sub b { color: #e6e9ef; font-weight: 600; }
+  .sub code { color: #c4b5fd; font-family: ui-monospace, Consolas, monospace; }
+
+  .scheme { margin: 0 0 44px; }
+  .scheme h2 { margin: 0 0 4px; font-size: 15.5px; font-weight: 600; }
+  .scheme h2 .tag {
+    font-size: 11px; font-weight: 500; color: #c4b5fd;
+    border: 1px solid rgba(167, 139, 250, .45); border-radius: 999px;
+    padding: 1px 8px; margin-left: 8px; vertical-align: 1px;
+  }
+  .note { margin: 0 0 14px; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+  .note b { color: #e6e9ef; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 14px; }
+
+  .term {
+    --term-bg: #0a0d13;
+    --term-line: #262c38;
+    --term-text: #d7dce5;
+    --term-muted: #8a93a2;
+    --term-white: #f5f7fa;
+    --term-blue: #4c9aff;
+    --term-orange: #ffa94d;
+    --term-yellow: #ffd43b;
+    --term-green: #51cf66;
+    background: var(--term-bg);
+    border: 1px solid var(--term-line);
+    border-radius: 10px;
+    padding: 14px 18px 14px;
+    overflow-x: auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+  }
+  .term.light {
+    --term-bg: #fafafa;
+    --term-line: #d8dee7;
+    --term-text: #24292f;
+    --term-muted: #6b7280;
+    --term-white: #1f2328;
+    --term-blue: #0969da;
+    --term-orange: #d9480f;
+    --term-yellow: #9a6700;
+    --term-green: #2b8a3e;
+  }
+  .term .label {
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--term-muted); margin-bottom: 10px;
+  }
+  .conv {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px; color: var(--term-muted); margin-bottom: 9px; white-space: pre;
+  }
+  .composer {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--term-line); border-radius: 8px;
+    padding: 8px 12px; margin-top: 7px;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13.5px;
+  }
+  .composer .prompt { color: var(--term-blue); font-weight: 700; }
+  .composer .draft { color: var(--term-text); }
+  .composer .cursor {
+    display: inline-block; width: 7px; height: 15px; background: var(--term-muted);
+    opacity: .55; vertical-align: -2px;
+  }
+
+  /* 选择器：画在状态带的槽位上 */
+  .picker {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13.5px; line-height: 1.6; white-space: pre;
+    color: var(--term-text);
+    border-left: 2px solid var(--term-blue);
+    padding: 6px 0 6px 11px;
+    margin-top: 9px;
+  }
+  .picker .title { font-weight: 700; }
+  .picker .row { display: block; padding-left: 2px; }
+  .picker .row .n { color: var(--term-blue); font-weight: 700; }
+  .picker .row.current .lbl { font-weight: 700; color: var(--term-white); }
+  .picker .row .lbl { color: var(--term-muted); }
+  .picker .row .mark { color: var(--term-muted); font-size: 11.5px; }
+  .picker .hint { color: var(--term-muted); font-size: 11.5px; margin-top: 5px; }
+
+  .band { font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: var(--term-text); margin-top: 9px; }
+  .band .model, .band .effort { color: var(--term-blue); font-weight: 700; }
+  .band .ctx, .band .rate { color: var(--term-yellow); }
+  .band .in { color: var(--term-orange); }
+  .band .out, .band .speed { color: var(--term-green); }
+  .band .arw { color: var(--term-muted); }
+  .band.grey, .band.grey * { color: var(--term-text); opacity: .62; }
+  .band.grey .model, .band.grey .effort { opacity: .78; font-weight: 700; }
+
+  .state-title {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); padding-left: 2px; margin: 14px 0 7px;
+  }
+  .footer { color: var(--muted); font-size: 12.5px; line-height: 1.9;
+    border-top: 1px solid var(--line); padding-top: 18px; margin-top: 8px; }
+  .footer b { color: #e6e9ef; font-weight: 600; }
+  code { font-family: ui-monospace, Consolas, monospace; color: #c4b5fd; }
+</style>
+</head>
+<body>
+
+<h1>Claude Code · <code>/band</code> 选择器预览</h1>
+<div class="sub">
+  <code>/band</code> 不开侧边面板、不弹 AskUserQuestion，而是<b>把选择器作为 inline 面板画在输入框正上方</b>
+  （输入框正上方），风格与 <code>/effort</code> 的菜单一致：标题、三行编号选项、当前项加粗。<br>
+  打开时接管键盘：上下键移动、<b>Enter</b> 选中；也可直接按 <b>1 / 2 / 3</b>。<b>Esc</b> 关闭且不改状态，再按一次 <code>/band</code> 同样关闭。
+</div>
+
+<!-- ============================ 1 · 打开 ============================ -->
+<section class="scheme">
+  <h2>1 · 执行 <code>/band</code> <span class="tag">当前：Color</span></h2>
+  <p class="note">
+    选择器是一个 inline 面板，紧贴输入框上方；左侧一条蓝色竖线表明它是当前焦点区域。
+    当前选项加粗并标 <b>(current)</b>，其余灰显。
+  </p>
+
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <div class="picker">
+<span class="title">Status band</span>
+<span class="row current"><span class="n">1</span>  <span class="lbl">Color</span><span class="mark">   (current)</span></span>
+<span class="row"><span class="n">2</span>  <span class="lbl">Grey</span></span>
+<span class="row"><span class="n">3</span>  <span class="lbl">Hidden</span></span>
+<span class="hint">1 / 2 / 3 or ↑↓ Enter · Esc close</span>
+      </div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft"></span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light">
+      <div class="label">Light</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <div class="picker">
+<span class="title">Status band</span>
+<span class="row current"><span class="n">1</span>  <span class="lbl">Color</span><span class="mark">   (current)</span></span>
+<span class="row"><span class="n">2</span>  <span class="lbl">Grey</span></span>
+<span class="row"><span class="n">3</span>  <span class="lbl">Hidden</span></span>
+<span class="hint">1 / 2 / 3 or ↑↓ Enter · Esc close</span>
+      </div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft"></span><span class="cursor"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2 · 按 2 ============================ -->
+<section class="scheme">
+  <h2>2 · 按下 <b>2</b> <span class="tag">Grey</span></h2>
+  <p class="note">
+    选中后立即生效、选择器关闭，状态带回到原位——整行灰显，模型与 effort 保留加粗。
+  </p>
+
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark · 选 Grey 之后</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <div class="band grey"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  ctx 42%  <span class="arw">↑</span> 1.2k  <span class="arw">↓</span> 4.5k  cache 98.2k 87%  42 t/s</div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light">
+      <div class="label">Light · 选 Grey 之后</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <div class="band grey"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  ctx 42%  <span class="arw">↑</span> 1.2k  <span class="arw">↓</span> 4.5k  cache 98.2k 87%  42 t/s</div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+  </div>
+
+  <div class="state-title">再执行一次 /band</div>
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark · 当前：Grey</div>
+      <div class="picker">
+<span class="title">Status band</span>
+<span class="row"><span class="n">1</span>  <span class="lbl">Color</span></span>
+<span class="row current"><span class="n">2</span>  <span class="lbl">Grey</span><span class="mark">   (current)</span></span>
+<span class="row"><span class="n">3</span>  <span class="lbl">Hidden</span></span>
+<span class="hint">1 / 2 / 3 or ↑↓ Enter · Esc close</span>
+      </div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft"></span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light">
+      <div class="label">Light · 当前：Grey</div>
+      <div class="picker">
+<span class="title">Status band</span>
+<span class="row"><span class="n">1</span>  <span class="lbl">Color</span></span>
+<span class="row current"><span class="n">2</span>  <span class="lbl">Grey</span><span class="mark">   (current)</span></span>
+<span class="row"><span class="n">3</span>  <span class="lbl">Hidden</span></span>
+<span class="hint">1 / 2 / 3 or ↑↓ Enter · Esc close</span>
+      </div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft"></span><span class="cursor"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3 · 按 3 ============================ -->
+<section class="scheme">
+  <h2>3 · 按下 <b>3</b> <span class="tag">Hidden</span></h2>
+  <p class="note">
+    选择器关闭，状态带不再绘制（引擎自己的输入框区保留）。再 <code>/band</code> 时仍停在
+    <b>Hidden</b>，按 <b>1</b> 或 <b>2</b> 随时恢复。
+  </p>
+
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark · 选 Hidden 之后</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light">
+      <div class="label">Light · 选 Hidden 之后</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+  </div>
+</section>
+
+<div class="footer">
+  <b>说明</b>：选择器是一个 <code>Pane</code>（inline，<code>rows</code> 设为内容高度），打开时
+  <code>focus: true</code> 接管键盘：<b>↑↓</b> 移动焦点、<b>Enter</b> 选中、<b>Esc</b> 关闭（<code>closeOnEscape</code>）。
+  三行是 <code>Button</code>（<code>plain</code>）带 <code>hotkey</code>「1 / 2 / 3」，当前项 <code>autoFocus</code>。
+  没有界面时 <code>$.ui.open</code> 返回 <code>isPlaced: false</code>，命令只回一行原因，状态不变。<br>
+  也可以跳过选择器：<code>/band show</code>、<code>/band hide</code>、<code>/band color</code>、<code>/band gray</code>。
+</div>
+
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code · Status Band 样式预览</title>
+<style>
+  :root {
+    --bg: #0d1017;
+    --card: #151922;
+    --line: #262c38;
+    --text: #e6e9ef;
+    --muted: #8b93a3;
+    --claude: #a78bfa;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #f87171;
+    --term-bg: #0a0d13;
+    --term-text: #d7dce5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 28px 80px;
+    background: radial-gradient(1200px 600px at 20% -10%, #1b2030 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+  .style { margin: 0 0 38px; }
+  .style h2 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  .style h2 .tag {
+    font-size: 11px; font-weight: 500; color: var(--claude);
+    border: 1px solid rgba(167,139,250,.45); border-radius: 999px;
+    padding: 1px 8px; margin-left: 8px; vertical-align: 1px;
+  }
+  .note { color: var(--muted); font-size: 12px; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 16px; }
+  .term {
+    background: var(--term-bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px 14px;
+    overflow-x: auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  }
+  .term.light {
+    --term-bg: #fafafa; --term-text: #24292f; --muted: #6b7280;
+    --line: #d8dee7; --claude: #7c3aed; --success: #15803d;
+    --warning: #b45309; --error: #b91c1c;
+    background: var(--term-bg); color: var(--term-text);
+  }
+  .term .label {
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+  }
+  .term pre {
+    margin: 0; font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13.5px; line-height: 1.55; white-space: pre; color: var(--term-text);
+  }
+  .term .promptline {
+    border-top: 1px solid var(--line); margin: 10px 0 8px;
+  }
+  .model { color: var(--claude); font-weight: 700; }
+  .effort { color: var(--muted); }
+  .dim { color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  .ok { color: var(--success); }
+  .warn { color: var(--warning); }
+  .bad { color: var(--error); }
+  .track { color: var(--muted); opacity: .55; }
+  .speed { color: var(--success); }
+  .cache { color: var(--success); }
+  .prompt { color: var(--claude); font-weight: 700; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 14px;
+    color: var(--muted); font-size: 12px;
+  }
+  .legend b { color: var(--text); font-weight: 600; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+  .states { margin-top: 14px; display: grid; gap: 8px; }
+  .state {
+    background: rgba(255,255,255,.02); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 14px; overflow-x: auto;
+  }
+  .state pre { font-size: 13.5px; }
+  .footer { color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.7; }
+  code { font-family: ui-monospace, Consolas, monospace; color: #c4b5fd; }
+</style>
+</head>
+<body>
+
+<h1>Claude Code · Status Band 样式预览</h1>
+<div class="sub">AbovePrompt band · 无 bash / 无子进程 · 数据为示例值</div>
+
+<!-- ============================ B ============================ -->
+<section class="style">
+  <h2>B · 进度条 + 图标 <span class="tag">已选</span></h2>
+  <p class="note">10 格 context 进度条，↑ in / ↓ out / cache read；窄屏折叠为两行。</p>
+
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark · wide</div>
+      <pre>● 已定位到重复渲染的原因
+
+<span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="dim">▕</span><span class="ok">██████</span><span class="track">░░░░</span><span class="dim">▏</span>  <span class="ok num">42%</span>  <span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="speed num">42 t/s</span></pre>
+      <div class="promptline"></div>
+      <pre><span class="prompt">❯</span> 继续</pre>
+    </div>
+
+    <div class="term dark">
+      <div class="label">Dark · narrow</div>
+      <pre>● 已定位到重复渲染的原因
+
+<span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="dim">▕</span><span class="ok">██████</span><span class="track">░░░░</span><span class="dim">▏</span>  <span class="ok num">42%</span>
+<span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="speed num">42 t/s</span></pre>
+      <div class="promptline"></div>
+      <pre><span class="prompt">❯</span> 继续</pre>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--claude)"></i><b>模型</b> 主题紫 + 加粗</span>
+    <span><i class="swatch" style="background:var(--muted)"></i><b>effort / 分隔</b> 灰</span>
+    <span><i class="swatch" style="background:var(--success)"></i><b>&lt;70%</b> 绿</span>
+    <span><i class="swatch" style="background:var(--warning)"></i><b>70–89%</b> 黄</span>
+    <span><i class="swatch" style="background:var(--error)"></i><b>≥90%</b> 红</span>
+    <span><b>↑</b> in · <b>↓</b> out · <b>cache</b> cache read</span>
+  </div>
+
+  <div class="states">
+    <div class="state">
+      <pre><span class="dim">42% green</span>   <span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="dim">▕</span><span class="ok">████░░░░░░</span><span class="dim">▏</span>  <span class="ok num">42%</span>  <span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="speed num">42 t/s</span></pre>
+    </div>
+    <div class="state">
+      <pre><span class="dim">76% warning</span> <span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="dim">▕</span><span class="warn">████████░░</span><span class="dim">▏</span>  <span class="warn num">76%</span>  <span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="speed num">42 t/s</span></pre>
+    </div>
+    <div class="state">
+      <pre><span class="dim">93% error</span>   <span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="dim">▕</span><span class="bad">█████████░</span><span class="dim">▏</span>  <span class="bad num">93%</span>  <span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="speed num">42 t/s</span></pre>
+    </div>
+    <div class="state">
+      <pre><span class="dim">fresh</span>        <span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="dim">ctx —</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ A ============================ -->
+<section class="style">
+  <h2>A · 分隔点单行</h2>
+  <p class="note">最克制；宽屏一行，窄屏折成两行。</p>
+
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark · wide</div>
+      <pre>● 已定位到重复渲染的原因
+
+<span class="model">Opus 5.5</span>  <span class="dim">·</span>  <span class="effort">high</span>  <span class="dim">·</span>  <span class="effort">ctx</span> <span class="ok num">42%</span>  <span class="dim">·</span>  <span class="dim">in</span> <span class="num">1.2k</span>  <span class="dim">·</span>  <span class="dim">out</span> <span class="num">4.5k</span>  <span class="dim">·</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">(87%)</span>  <span class="dim">·</span>  <span class="speed num">42 t/s</span></pre>
+      <div class="promptline"></div>
+      <pre><span class="prompt">❯</span> 继续</pre>
+    </div>
+
+    <div class="term dark">
+      <div class="label">Dark · narrow</div>
+      <pre>● 已定位到重复渲染的原因
+
+<span class="model">Opus 5.5</span>  <span class="dim">·</span>  <span class="effort">high</span>  <span class="dim">·</span>  <span class="effort">ctx</span> <span class="ok num">42%</span>
+<span class="dim">in</span> <span class="num">1.2k</span>  <span class="dim">·</span>  <span class="dim">out</span> <span class="num">4.5k</span>  <span class="dim">·</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">(87%)</span>  <span class="dim">·</span>  <span class="speed num">42 t/s</span></pre>
+      <div class="promptline"></div>
+      <pre><span class="prompt">❯</span> 继续</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ C ============================ -->
+<section class="style">
+  <h2>C · 固定双行</h2>
+  <p class="note">信息分组最清楚；宽屏也保持两层。</p>
+
+  <div class="grid">
+    <div class="term dark">
+      <div class="label">Dark · wide</div>
+      <pre>● 已定位到重复渲染的原因
+
+<span class="model">Opus 5.5</span>  <span class="dim">·</span>  <span class="effort">high</span>  <span class="dim">·</span>  <span class="effort">ctx</span> <span class="ok num">42%</span> <span class="dim">▕</span><span class="ok">██████</span><span class="track">░░░░</span><span class="dim">▏</span> <span class="dim num">84k/200k</span>
+<span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">·</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="dim">·</span>  <span class="speed num">42 t/s</span></pre>
+      <div class="promptline"></div>
+      <pre><span class="prompt">❯</span> 继续</pre>
+    </div>
+
+    <div class="term light">
+      <div class="label">Light · wide</div>
+      <pre>● 已定位到重复渲染的原因
+
+<span class="model">Opus 5.5</span>  <span class="dim">·</span>  <span class="effort">high</span>  <span class="dim">·</span>  <span class="effort">ctx</span> <span class="ok num">42%</span> <span class="dim">▕</span><span class="ok">██████</span><span class="track">░░░░</span><span class="dim">▏</span> <span class="dim num">84k/200k</span>
+<span class="dim">↑</span><span class="num">1.2k</span>  <span class="dim">↓</span><span class="num">4.5k</span>  <span class="dim">·</span>  <span class="dim">cache</span> <span class="num">98.2k</span> <span class="dim num">87%</span>  <span class="dim">·</span>  <span class="speed num">42 t/s</span></pre>
+      <div class="promptline"></div>
+      <pre><span class="prompt">❯</span> 继续</pre>
+    </div>
+  </div>
+</section>
+
+<div class="footer">
+  预览文件：<code>C:\Users\1002863\.claude\dev-mods\5b6ca524-636c-4d20-b873-7a9865756c93\_preview\status-band.html</code><br>
+  实际落地为 B；颜色跟随 Claude Code 主题（暗/亮），数字使用等宽字形。
+</div>
+
+</body>
+</html>

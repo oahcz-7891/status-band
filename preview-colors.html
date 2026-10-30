@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code · 状态带配色方案</title>
+<style>
+  :root {
+    --bg: #0d1017;
+    --line: #262c38;
+    --text: #d7dce5;
+    --blue: #4c9aff;
+    --white: #f5f7fa;
+    --muted: #8a93a2;
+    --orange: #ffa94d;
+    --yellow: #ffd43b;
+    --green: #51cf66;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 38px 26px 90px;
+    background: radial-gradient(1200px 620px at 18% -10%, #1b2030 0%, var(--bg) 55%);
+    color: #e6e9ef;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  h1 { margin: 0 0 6px; font-size: 22px; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.75; }
+  .sub b { color: #e6e9ef; font-weight: 600; }
+  .sub code { color: #c4b5fd; font-family: ui-monospace, Consolas, monospace; }
+
+  .palette {
+    display: flex; flex-wrap: wrap; gap: 10px 22px;
+    padding: 12px 16px; margin: 0 0 34px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: rgba(255, 255, 255, .02);
+    font-size: 12.5px; color: var(--muted);
+  }
+  .palette b { color: #e6e9ef; font-weight: 600; }
+  .swatch {
+    display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+    margin-right: 6px; vertical-align: -1px;
+  }
+
+  .scheme { margin: 0 0 44px; }
+  .scheme h2 { margin: 0 0 4px; font-size: 15.5px; font-weight: 600; }
+  .scheme h2 .tag {
+    font-size: 11px; font-weight: 500; color: #c4b5fd;
+    border: 1px solid rgba(167, 139, 250, .45); border-radius: 999px;
+    padding: 1px 8px; margin-left: 8px; vertical-align: 1px;
+  }
+  .note { margin: 0 0 14px; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+  .note b { color: #e6e9ef; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 14px; }
+
+  .term {
+    --term-bg: #0a0d13;
+    --term-line: #262c38;
+    --term-text: #d7dce5;
+    --term-muted: #8a93a2;
+    --term-white: #f5f7fa;
+    --term-blue: #4c9aff;
+    --term-orange: #ffa94d;
+    --term-yellow: #ffd43b;
+    --term-green: #51cf66;
+    background: var(--term-bg);
+    border: 1px solid var(--term-line);
+    border-radius: 10px;
+    padding: 14px 18px 14px;
+    overflow-x: auto;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+  }
+  .term.light {
+    --term-bg: #fafafa;
+    --term-line: #d8dee7;
+    --term-text: #24292f;
+    --term-muted: #6b7280;
+    --term-white: #1f2328;
+    --term-blue: #0969da;
+    --term-orange: #d9480f;
+    --term-yellow: #9a6700;
+    --term-green: #2b8a3e;
+  }
+  .term .label {
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--term-muted); margin-bottom: 10px;
+  }
+  .conv {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px; color: var(--term-muted); margin-bottom: 9px; white-space: pre;
+  }
+  .composer {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--term-line); border-radius: 8px;
+    padding: 8px 12px; margin-top: 7px;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13.5px;
+  }
+  .composer .prompt { color: var(--term-blue); font-weight: 700; }
+  .composer .draft { color: var(--term-text); }
+  .composer .cursor {
+    display: inline-block; width: 7px; height: 15px; background: var(--term-muted);
+    opacity: .55; vertical-align: -2px;
+  }
+
+  pre.line {
+    margin: 0; padding: 0;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13.5px; line-height: 1.55; white-space: pre; color: var(--term-text);
+  }
+  .num { font-variant-numeric: tabular-nums; }
+  .model { color: var(--term-blue); font-weight: 700; }
+  .effort { color: var(--term-blue); font-weight: 700; }
+
+  /* ---------- 方案 A · 语义红绿灯 ---------- */
+  .scheme-a .lbl { color: var(--term-muted); }
+  .scheme-a .arw { color: var(--term-muted); }
+  .scheme-a .tok { color: var(--term-white); }
+  .scheme-a .cache { color: var(--term-white); }
+  .scheme-a .ctx { color: var(--term-green); }
+  .scheme-a .ctx.warn { color: var(--term-yellow); }
+  .scheme-a .ctx.bad { color: var(--term-orange); }
+  .scheme-a .rate { color: var(--term-green); }
+  .scheme-a .rate.warn { color: var(--term-yellow); }
+  .scheme-a .rate.bad { color: var(--term-orange); }
+  .scheme-a .speed { color: var(--term-green); }
+  .scheme-a .speed.warn { color: var(--term-yellow); }
+  .scheme-a .speed.bad { color: var(--term-orange); }
+
+  /* ---------- 方案 B · 四色分段 ---------- */
+  .scheme-b .lbl { color: var(--term-white); opacity: .82; }
+  .scheme-b .arw { color: var(--term-muted); }
+  .scheme-b .ctx { color: var(--term-yellow); }
+  .scheme-b .in { color: var(--term-orange); }
+  .scheme-b .out { color: var(--term-green); }
+  .scheme-b .cache { color: var(--term-white); }
+  .scheme-b .rate { color: var(--term-yellow); }
+  .scheme-b .speed { color: var(--term-green); }
+
+  /* ---------- 方案 C · 白字为主 ---------- */
+  .scheme-c .lbl { color: var(--term-muted); }
+  .scheme-c .arw { color: var(--term-muted); }
+  .scheme-c .tok { color: var(--term-white); font-weight: 600; }
+  .scheme-c .cache { color: var(--term-white); font-weight: 600; }
+  .scheme-c .rate { color: var(--term-white); opacity: .68; }
+  .scheme-c .ctx { color: var(--term-green); font-weight: 600; }
+  .scheme-c .ctx.warn { color: var(--term-yellow); }
+  .scheme-c .ctx.bad { color: var(--term-orange); }
+  .scheme-c .speed { color: var(--term-green); font-weight: 600; }
+
+  /* ---------- 方案 D · 高饱和全彩 ---------- */
+  .scheme-d .lbl { color: var(--term-white); opacity: .72; }
+  .scheme-d .ctx { color: var(--term-orange); font-weight: 700; }
+  .scheme-d .in { color: var(--term-yellow); font-weight: 600; }
+  .scheme-d .out { color: var(--term-green); font-weight: 600; }
+  .scheme-d .cache { color: var(--term-white); font-weight: 600; }
+  .scheme-d .rate { color: var(--term-orange); font-weight: 600; }
+  .scheme-d .speed { color: var(--term-green); font-weight: 700; }
+  .scheme-d .arw { color: inherit; }
+
+  .states { display: grid; gap: 6px; margin-top: 10px; }
+  .strip {
+    --term-bg: #0a0d13; --term-line: #262c38; --term-text: #d7dce5;
+    --term-muted: #8a93a2; --term-white: #f5f7fa; --term-blue: #4c9aff;
+    --term-orange: #ffa94d; --term-yellow: #ffd43b; --term-green: #51cf66;
+    background: var(--term-bg); border: 1px solid var(--term-line);
+    border-radius: 8px; padding: 7px 13px; overflow-x: auto;
+  }
+  .strip pre.line { font-size: 13px; }
+  .state-title {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); padding-left: 2px; margin: 12px 0 7px;
+  }
+
+  .footer {
+    color: var(--muted); font-size: 12.5px; line-height: 1.9;
+    border-top: 1px solid var(--line); padding-top: 18px; margin-top: 8px;
+  }
+  .footer b { color: #e6e9ef; font-weight: 600; }
+  code { font-family: ui-monospace, Consolas, monospace; color: #c4b5fd; }
+</style>
+</head>
+<body>
+
+<h1>Claude Code · 状态带配色方案</h1>
+<div class="sub">
+  位置：<b>输入框上方保持不变</b>（<code>AbovePrompt</code>）；字段保持现状：
+  <b>模型 / effort / ctx / ↑ / ↓ / cache / t/s</b>；窄屏<b>折成两行</b>。<br>
+  模型与 effort 沿用现有蓝色并加粗，本次只给 <code>ctx</code> 及其后的数值上色。主色：橙 / 黄 / 绿 / 白。
+</div>
+
+<div class="palette">
+  <span><i class="swatch" style="background:#ffa94d"></i>橙 <b>#FFA94D</b></span>
+  <span><i class="swatch" style="background:#ffd43b"></i>黄 <b>#FFD43B</b></span>
+  <span><i class="swatch" style="background:#51cf66"></i>绿 <b>#51CF66</b></span>
+  <span><i class="swatch" style="background:#f5f7fa"></i>白 <b>#F5F7FA</b></span>
+  <span><i class="swatch" style="background:#4c9aff"></i>模型（不变）<b>#4C9AFF</b></span>
+  <span>浅色主题：橙 <b>#D9480F</b> / 黄 <b>#9A6700</b> / 绿 <b>#2B8A3E</b></span>
+</div>
+
+<!-- ============================ A ============================ -->
+<section class="scheme">
+  <h2>A · 语义红绿灯</h2>
+  <p class="note">
+    颜色表示<b>健康度</b>：ctx 占用、缓存命中率、速度随数值在 绿 → 黄 → 橙 之间变化；
+    token 数字保持白色。压力一眼可见，又不至于满屏花色。
+  </p>
+
+  <div class="grid">
+    <div class="term dark scheme-a">
+      <div class="label">Dark · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light scheme-a">
+      <div class="label">Light · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+  </div>
+
+  <div class="state-title">状态变化 · 绿 / 黄 / 橙</div>
+  <div class="states">
+    <div class="strip scheme-a"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+    <div class="strip scheme-a"><pre class="line"><span class="lbl">ctx</span> <span class="ctx warn num">78%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">312k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">96k</span></span>  <span class="lbl">cache</span> <span class="cache num">3.4M</span> <span class="rate warn num">62%</span>  <span class="speed warn num">24 t/s</span></pre></div>
+    <div class="strip scheme-a"><pre class="line"><span class="lbl">ctx</span> <span class="ctx bad num">93%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">901k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">233k</span></span>  <span class="lbl">cache</span> <span class="cache num">12.1M</span> <span class="rate bad num">41%</span>  <span class="speed bad num">6 t/s</span></pre></div>
+  </div>
+
+  <div class="state-title">窄屏 · 折成两行</div>
+  <div class="strip scheme-a"><pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>
+<span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+</section>
+
+<!-- ============================ B ============================ -->
+<section class="scheme">
+  <h2>B · 四色分段 <span class="tag">已选</span></h2>
+  <p class="note">
+    每个指标固定一个色相，<b>不随数值变化</b>：ctx 黄、↑ 橙、↓ 绿、cache 白 / 命中率黄、t/s 绿。
+    信息分区最清楚，扫读成本最低。
+  </p>
+
+  <div class="grid">
+    <div class="term dark scheme-b">
+      <div class="label">Dark · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light scheme-b">
+      <div class="label">Light · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+  </div>
+
+  <div class="state-title">数值变化 · 色相保持不变</div>
+  <div class="states">
+    <div class="strip scheme-b"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+    <div class="strip scheme-b"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">78%</span>  <span class="in"><span class="arw">↑</span> <span class="num">312k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">96k</span></span>  <span class="lbl">cache</span> <span class="cache num">3.4M</span> <span class="rate num">62%</span>  <span class="speed num">24 t/s</span></pre></div>
+    <div class="strip scheme-b"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">93%</span>  <span class="in"><span class="arw">↑</span> <span class="num">901k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">233k</span></span>  <span class="lbl">cache</span> <span class="cache num">12.1M</span> <span class="rate num">41%</span>  <span class="speed num">6 t/s</span></pre></div>
+  </div>
+
+  <div class="state-title">窄屏 · 折成两行</div>
+  <div class="strip scheme-b"><pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>
+<span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+</section>
+
+<!-- ============================ C ============================ -->
+<section class="scheme">
+  <h2>C · 白字为主</h2>
+  <p class="note">
+    数字全部用<b>白色加粗</b>，只有 ctx 做红绿灯、t/s 固定绿色；橙黄只在高占用时出现。
+    最克制，接近原生状态行的气质。
+  </p>
+
+  <div class="grid">
+    <div class="term dark scheme-c">
+      <div class="label">Dark · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light scheme-c">
+      <div class="label">Light · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+  </div>
+
+  <div class="state-title">状态变化 · 高占用才转黄 / 橙</div>
+  <div class="states">
+    <div class="strip scheme-c"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+    <div class="strip scheme-c"><pre class="line"><span class="lbl">ctx</span> <span class="ctx warn num">78%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">312k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">96k</span></span>  <span class="lbl">cache</span> <span class="cache num">3.4M</span> <span class="rate num">62%</span>  <span class="speed num">24 t/s</span></pre></div>
+    <div class="strip scheme-c"><pre class="line"><span class="lbl">ctx</span> <span class="ctx bad num">93%</span>  <span class="in"><span class="arw">↑</span> <span class="tok num">901k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">233k</span></span>  <span class="lbl">cache</span> <span class="cache num">12.1M</span> <span class="rate num">41%</span>  <span class="speed num">6 t/s</span></pre></div>
+  </div>
+
+  <div class="state-title">窄屏 · 折成两行</div>
+  <div class="strip scheme-c"><pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>
+<span class="in"><span class="arw">↑</span> <span class="tok num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="tok num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+</section>
+
+<!-- ============================ D ============================ -->
+<section class="scheme">
+  <h2>D · 高饱和全彩</h2>
+  <p class="note">
+    四色全部上场且<b>加粗</b>：ctx 橙、↑ 黄、↓ 绿、cache 白、命中率橙、t/s 绿。
+    最醒目，适合把状态带当仪表盘看。
+  </p>
+
+  <div class="grid">
+    <div class="term dark scheme-d">
+      <div class="label">Dark · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="term light scheme-d">
+      <div class="label">Light · 宽屏一行</div>
+      <div class="conv">● 已定位到重复渲染的原因</div>
+      <pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre>
+      <div class="composer"><span class="prompt">❯</span><span class="draft">继续</span><span class="cursor"></span></div>
+    </div>
+  </div>
+
+  <div class="state-title">数值变化 · 颜色最跳</div>
+  <div class="states">
+    <div class="strip scheme-d"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">5%</span>  <span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+    <div class="strip scheme-d"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">78%</span>  <span class="in"><span class="arw">↑</span> <span class="num">312k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">96k</span></span>  <span class="lbl">cache</span> <span class="cache num">3.4M</span> <span class="rate num">62%</span>  <span class="speed num">24 t/s</span></pre></div>
+    <div class="strip scheme-d"><pre class="line"><span class="lbl">ctx</span> <span class="ctx num">93%</span>  <span class="in"><span class="arw">↑</span> <span class="num">901k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">233k</span></span>  <span class="lbl">cache</span> <span class="cache num">12.1M</span> <span class="rate num">41%</span>  <span class="speed num">6 t/s</span></pre></div>
+  </div>
+
+  <div class="state-title">窄屏 · 折成两行</div>
+  <div class="strip scheme-d"><pre class="line"><span class="model">Opus 5.5</span>  <span class="effort">high</span>  <span class="lbl">ctx</span> <span class="ctx num">5%</span>
+<span class="in"><span class="arw">↑</span> <span class="num">45k</span></span>  <span class="out"><span class="arw">↓</span> <span class="num">12k</span></span>  <span class="lbl">cache</span> <span class="cache num">611k</span> <span class="rate num">93%</span>  <span class="speed num">80 t/s</span></pre></div>
+</section>
+
+<div class="footer">
+  <b>当前已选</b>：B · 四色分段。其余方案保留作参考：
+  A 语义红绿灯；C 白字为主；D 高饱和全彩。<br>
+  已落到 <code>hooks/register.tsx</code>；字段、位置与两行折叠都不动。
+</div>
+
+</body>
+</html>

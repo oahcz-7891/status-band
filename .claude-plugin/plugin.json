@@ -1,0 +1,6 @@
+{
+  "name": "status-band",
+  "version": "0.1.0",
+  "description": "Live above-prompt status band: model, thinking effort, context %, cumulative session tokens, cache rate and tok/s. No subprocesses.",
+  "types": "./types/index.d.ts"
+}
